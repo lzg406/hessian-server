@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.vivo.hessian.dao.CardAccountMapper" >
+    <resultMap id="BaseResultMap" type="com.vivo.hessian.domain.po.CardAccount" >
+        <result column="id" property="id" jdbcType="BIGINT" />
+        <result column="pin" property="pin" jdbcType="VARCHAR" />
+        <result column="policyNo" property="policyNo" jdbcType="VARCHAR" />
+        <result column="payType" property="payType" jdbcType="VARCHAR" />
+        <result column="cardId" property="cardId" jdbcType="VARCHAR" />
+        <result column="cardNo" property="cardNo" jdbcType="VARCHAR" />
+        <result column="bankCode" property="bankCode" jdbcType="VARCHAR" />
+        <result column="payEnum" property="payEnum" jdbcType="VARCHAR" />
+        <result column="amount" property="amount" jdbcType="DECIMAL" />
+        <result column="frozenAmount" property="frozenAmount" jdbcType="DECIMAL" />
+        <result column="comId" property="comId" jdbcType="VARCHAR" />
+        <result column="productId" property="productId" jdbcType="VARCHAR" />
+        <result column="productName" property="productName" jdbcType="VARCHAR" />
+        <result column="cardFlag" property="cardFlag" jdbcType="VARCHAR" />
+        <result column="sysType" property="sysType" jdbcType="VARCHAR" />
+        <result column="pinType" property="pinType" jdbcType="VARCHAR" />
+        <result column="agent" property="agent" jdbcType="VARCHAR" />
+        <result column="ver" property="ver" jdbcType="BIGINT" />
+        <result column="tbId" property="tbId" jdbcType="VARCHAR" />
+        <result column="createDate" property="createDate" jdbcType="TIMESTAMP" />
+        <result column="lastUpdate" property="lastUpdate" jdbcType="TIMESTAMP" />
+        <result column="ext1" property="ext1" jdbcType="VARCHAR" />
+    </resultMap>
+    <insert id="insert" parameterType="com.vivo.hessian.domain.po.CardAccount" >
+    insert into ins_cardaccount ( pin, policyNo,
+      payType, cardId, cardNo,
+      bankCode, payEnum, amount,
+      frozenAmount, comId, productId,
+      productName, cardFlag, sysType,
+      pinType, agent,ver, tbId,
+      createDate, lastUpdate, ext1
+      )
+    values ( #{pin,jdbcType=VARCHAR}, #{policyNo,jdbcType=VARCHAR},
+      #{payType,jdbcType=VARCHAR}, #{cardId,jdbcType=VARCHAR}, #{cardNo,jdbcType=VARCHAR},
+      #{bankCode,jdbcType=VARCHAR}, #{payEnum,jdbcType=VARCHAR}, #{amount,jdbcType=DECIMAL},
+      0, #{comId,jdbcType=VARCHAR}, #{productId,jdbcType=VARCHAR},
+      #{productName,jdbcType=VARCHAR}, #{cardFlag,jdbcType=VARCHAR}, #{sysType,jdbcType=VARCHAR},
+      #{pinType,jdbcType=VARCHAR}, #{agent,jdbcType=VARCHAR},#{ver,jdbcType=BIGINT}, #{tableIndex,jdbcType=VARCHAR},
+      now(), now(), #{ext1,jdbcType=VARCHAR}
+      )
+  </insert>
+    <!--查单条记录-->
+    <select id="selectCardAccount" resultMap="BaseResultMap" parameterType="com.vivo.hessian.domain.po.CardAccount">
+        select pin, policyNo,payType, cardId, cardNo,bankCode, payEnum, amount,frozenAmount, comId, productId,productName, cardFlag, sysType,pinType,agent, ver, tbId,createDate, lastUpdate, ext1
+        from ins_cardaccount where pin = #{pin,jdbcType=VARCHAR} and policyNo = #{policyNo,jdbcType=VARCHAR}
+        <if test="cardId != null">
+            and cardId = #{cardId,jdbcType=VARCHAR}
+        </if>
+        <if test="comId != null">
+            and comId = #{comId,jdbcType=VARCHAR}
+        </if>
+        <if test="cardFlag != null">
+            and cardFlag = #{cardFlag,jdbcType=VARCHAR}
+        </if>
+    </select>
+    <!--查多条记录-->
+    <select id="selectCardList" resultMap="BaseResultMap" parameterType="com.vivo.hessian.domain.po.CardAccount">
+        select pin, policyNo,payType, cardId, cardNo,bankCode, payEnum, amount,frozenAmount, comId, productId,productName, cardFlag, sysType,pinType,agent, ver, tbId,createDate, lastUpdate, ext1
+        from ins_cardaccount where pin = #{pin,jdbcType=VARCHAR}
+        <if test="policyNo != null">
+            and policyNo = #{policyNo,jdbcType=VARCHAR}
+        </if>
+        <if test="cardId != null">
+            and cardId = #{cardId,jdbcType=VARCHAR}
+        </if>
+        <if test="comId != null">
+            and comId = #{comId,jdbcType=VARCHAR}
+        </if>
+        <if test="cardFlag != null">
+            and cardFlag = #{cardFlag,jdbcType=VARCHAR}
+        </if>
+    </select>
+    <!-- 给主卡账户价值amount累计收益-->
+    <update id="addIncome" parameterType="com.vivo.hessian.domain.vo.CardAccountVo">
+        update ins_cardaccount
+        SET amount = amount + #{profit,jdbcType=DECIMAL},lastUpdate = now()
+        where pin = #{pin,jdbcType=VARCHAR} and policyNo = #{policyNo,jdbcType=VARCHAR} and comId = #{comId,jdbcType=VARCHAR}  and cardFlag = '1'
+    </update>
+    <!-- 追加，更新卡账户价值amount-->
+    <update id="updateIssue" parameterType="com.vivo.hessian.domain.po.CardAccount">
+        update ins_cardaccount  SET amount = amount + #{amount,jdbcType=DECIMAL},lastUpdate = now()
+        where pin = #{pin,jdbcType=VARCHAR} and policyNo = #{policyNo,jdbcType=VARCHAR}  and cardId = #{cardId,jdbcType=VARCHAR}
+    </update>
+    <!-- 赎回成功，减卡账户价值并解冻金额-->
+    <update id="updateRefund" parameterType="com.vivo.hessian.domain.po.CardAccount">
+        update ins_cardaccount  SET amount = amount + #{amount,jdbcType=DECIMAL},lastUpdate = now()
+        <if test="frozenAmount != null" >
+            ,frozenAmount = frozenAmount + #{frozenAmount,jdbcType=DECIMAL}
+        </if>
+        where pin = #{pin,jdbcType=VARCHAR} and policyNo = #{policyNo,jdbcType=VARCHAR}  and cardId = #{cardId,jdbcType=VARCHAR}
+    </update>
+    <!-- 赎回申请&赎回失败  冻结和解冻申请金额-->
+    <update id="updateFrozenAmount" parameterType="com.vivo.hessian.domain.po.CardAccount">
+        update ins_cardaccount  SET frozenAmount = frozenAmount + #{frozenAmount,jdbcType=DECIMAL},lastUpdate = now()
+        where pin = #{pin,jdbcType=VARCHAR} and policyNo = #{policyNo,jdbcType=VARCHAR}  and cardId = #{cardId,jdbcType=VARCHAR}
+    </update>
+    <!--系统维护用-->
+    <update id="systemMaintenance" parameterType="com.vivo.hessian.domain.po.CardAccount" >
+        update ins_cardaccount
+        <set >
+            <if test="payType != null" >
+                payType = #{payType,jdbcType=VARCHAR},
+            </if>
+            <if test="productId != null" >
+                productId = #{productId,jdbcType=VARCHAR},
+            </if>
+            <if test="productName != null" >
+                productName = #{productName,jdbcType=VARCHAR},
+            </if>
+            <if test="amount != null" >
+                amount = #{amount,jdbcType=DECIMAL},
+            </if>
+            <if test="frozenAmount != null" >
+                frozenAmount = #{frozenAmount,jdbcType=DECIMAL},
+            </if>
+            <if test="comId != null" >
+                comId = #{comId,jdbcType=SMALLINT},
+            </if>
+            <if test="ver != null" >
+                Ver = #{ver,jdbcType=BIGINT},
+            </if>
+            <if test="cardFlag != null" >
+                cardFlag = #{cardFlag,jdbcType=VARCHAR},
+            </if>
+            <if test="sysType != null" >
+                sysType = #{sysType,jdbcType=VARCHAR},
+            </if>
+            <if test="pinType != null" >
+                pinType = #{pinType,jdbcType=VARCHAR},
+            </if>
+            <if test="agent != null" >
+                agent = #{agent,jdbcType=VARCHAR},
+            </if>
+            lastUpdate = now()
+        </set>
+        where pin = #{pin,jdbcType=VARCHAR} and policyNo = #{policyNo,jdbcType=VARCHAR}  and cardId = #{cardId,jdbcType=VARCHAR}
+    </update>
+</mapper>
